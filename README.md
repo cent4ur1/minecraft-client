@@ -1,5 +1,6 @@
 # Open Myau
 
+<!-- 
 ![Preview](/images/image2.png)
 
 [Myau Client](https://myau.sell.app/), for those who can’t afford it.
@@ -28,3 +29,6 @@ You can open an issue or submit a pull request to help improve Open Myau.
 If you’re interested in co-developing or have questions, feel free to reach out:
 
 * Discord: `60124808866_88040`
+
+-->
+
