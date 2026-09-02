@@ -1,37 +1,36 @@
 import org.apache.commons.lang3.SystemUtils
+
 plugins {
     idea
     java
-    id("gg.essential.loom") version "0.10.0.+"
+    id("gg.essential.loom") version "0.10.0.5"
     id("dev.architectury.architectury-pack200") version "0.1.3"
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
-//Constants:
+
 val baseGroup: String by project
 val mcVersion: String by project
 val version: String by project
 val mixinGroup = "$baseGroup.mixin"
 val modid: String by project
-val jarName: String by project
-val transformerFile = file("src/main/resources/accesstransformer.cfg")
-// Toolchains:
+val minecraftModsDir = file("C:/Users/ThatC/Downloads/MultiMC/instances/Raven/.minecraft/mods")
+
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(8))
 }
-// Minecraft configuration:
+
 loom {
     log4jConfigs.from(file("log4j2.xml"))
     launchConfigs {
         "client" {
-            // If you don't want mixins, remove these lines
             property("mixin.debug", "true")
             arg("--tweakClass", "org.spongepowered.asm.launch.MixinTweaker")
         }
     }
     runConfigs {
         "client" {
+            runDir("run-dev")
             if (SystemUtils.IS_OS_MAC_OSX) {
-                // This argument causes a crash on macOS
                 vmArgs.remove("-XstartOnFirstThread")
             }
         }
@@ -39,88 +38,185 @@ loom {
     }
     forge {
         pack200Provider.set(dev.architectury.pack200.java.Pack200Adapter())
-        // If you don't want mixins, remove this lines
-        mixinConfig("mixins.$modid.json")
-	    if (transformerFile.exists()) {
-			println("Installing access transformer")
-		    accessTransformer(transformerFile)
-	    }
+        mixinConfig("mixins.raven.json")
     }
-    // If you don't want mixins, remove these lines
+
     mixin {
-        defaultRefmapName.set("mixins.$modid.refmap.json")
+        defaultRefmapName.set("mixins.raven.refmap.json")
     }
 }
+
 sourceSets.main {
     output.setResourcesDir(sourceSets.main.flatMap { it.java.classesDirectory })
 }
-// Dependencies:
+
+// Loom 0.10's RunGameTask predates Gradle 8's task-property validation.
+// Use Gradle's supported JavaExec task with Loom's generated launch config.
+tasks.register<JavaExec>("devClient") {
+    group = "loom"
+    description = "Starts the Forge 1.8.9 development client."
+    dependsOn(tasks.named("classes"), tasks.named("downloadAssets"))
+
+    mainClass.set("net.fabricmc.devlaunchinjector.Main")
+    classpath = sourceSets.main.get().runtimeClasspath
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    })
+
+    val runDirectory = file("run-dev")
+    workingDir(runDirectory)
+    jvmArgs(
+        "-Dfabric.dli.config=${file(".gradle/loom-cache/launch.cfg").absolutePath}",
+        "-Dfabric.dli.env=client",
+        "-Dfabric.dli.main=net.minecraft.launchwrapper.Launch"
+    )
+
+    doFirst {
+        runDirectory.mkdirs()
+    }
+}
+
 repositories {
     mavenCentral()
-    maven("https://repo.spongepowered.org/maven/")
-    // If you don't want to log in with your real minecraft account, remove this line
-    maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1")
+    maven("https://repo.polyfrost.cc/releases/")
 }
+
 val shadowImpl: Configuration by configurations.creating {
     configurations.implementation.get().extendsFrom(this)
 }
+
 dependencies {
     minecraft("com.mojang:minecraft:1.8.9")
     mappings("de.oceanlabs.mcp:mcp_stable:22-1.8.9")
     forge("net.minecraftforge:forge:1.8.9-11.15.1.2318-1.8.9")
-    // If you don't want mixins, remove these lines
     shadowImpl("org.spongepowered:mixin:0.7.11-SNAPSHOT") {
         isTransitive = false
+        exclude(module = "gson")
+        exclude(module = "guava")
+        exclude(module = "jarjar")
+        exclude(module = "commons-codec")
+        exclude(module = "commons-io")
+        exclude(module = "launchwrapper")
+        exclude(module = "asm-commons")
+        exclude(module = "slf4j-api")
     }
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
-    // If you don't want to log in with your real minecraft account, remove this line
-    runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
+    shadowImpl("org.java-websocket:Java-WebSocket:1.6.0")
 }
-// Tasks:
+
 tasks.withType(JavaCompile::class) {
     options.encoding = "UTF-8"
 }
+
 tasks.withType(org.gradle.jvm.tasks.Jar::class) {
-    archiveBaseName.set(jarName)
+    archiveBaseName.set(modid)
     manifest.attributes.run {
         this["FMLCorePluginContainsFMLMod"] = "true"
         this["ForceLoadAsMod"] = "true"
-        // If you don't want mixins, remove these lines
+
         this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
-        this["MixinConfigs"] = "mixins.$modid.json"
-	    if (transformerFile.exists())
-			this["FMLAT"] = "${modid}_at.cfg"
+        this["MixinConfigs"] = "mixins.raven.json"
     }
 }
+
 tasks.processResources {
     inputs.property("version", project.version)
     inputs.property("mcversion", mcVersion)
     inputs.property("modid", modid)
     inputs.property("basePackage", baseGroup)
-    filesMatching(listOf("mcmod.info", "mixins.$modid.json","version.json")) {
+
+    filesMatching(listOf("mcmod.info", "mixins.raven.json")) {
         expand(inputs.properties)
     }
+
     rename("accesstransformer.cfg", "META-INF/${modid}_at.cfg")
 }
+
+
 val remapJar by tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
     archiveClassifier.set("")
+    destinationDirectory.set(minecraftModsDir)
     from(tasks.shadowJar)
     input.set(tasks.shadowJar.get().archiveFile)
 }
+
 tasks.jar {
     archiveClassifier.set("without-deps")
     destinationDirectory.set(layout.buildDirectory.dir("intermediates"))
 }
+
 tasks.shadowJar {
     destinationDirectory.set(layout.buildDirectory.dir("intermediates"))
     archiveClassifier.set("non-obfuscated-with-deps")
     configurations = listOf(shadowImpl)
+    from(sourceSets.main.get().output)
+
+    exclude(
+        "dummyThing",
+        "LICENSE.txt",
+        "META-INF/MUMFREY.RSA",
+        "META-INF/maven/**",
+        "org/**/*.html",
+        "LICENSE.md",
+        "pack.mcmeta",
+        "**/module-info.class",
+        "*.so",
+        "*.dylib",
+        "*.dll",
+        "*.jnilib",
+        "ibxm/**",
+        "com/jcraft/**",
+        "org/lwjgl/**",
+        "net/java/**",
+        "META-INF/proguard/**",
+        "META-INF/versions/**",
+        "META-INF/com.android.tools/**",
+        "fabric.mod.json"
+    )
+
     doLast {
         configurations.forEach {
             println("Copying dependencies into mod: ${it.files}")
         }
     }
-    // If you want to include other dependencies and shadow them, you can relocate them in here
     fun relocate(name: String) = relocate(name, "$baseGroup.deps.$name")
 }
+
 tasks.assemble.get().dependsOn(tasks.remapJar)
+
+tasks.register("buildMinecraft") {
+    group = "build"
+    description = "Builds the mod and installs the fresh jar into the local Minecraft mods folder."
+    dependsOn(remapJar)
+
+    doFirst {
+        logger.lifecycle("buildMinecraft: building Raven bS and installing it into your .minecraft mods folder...")
+    }
+
+    doLast {
+        val builtJar = remapJar.archiveFile.get().asFile
+        val modsDir = minecraftModsDir
+
+        if (!modsDir.exists()) {
+            modsDir.mkdirs()
+        }
+
+        modsDir.listFiles { file ->
+            file.isFile &&
+                file != builtJar &&
+                file.name.startsWith("${modid}-") &&
+                file.name.endsWith(".jar")
+        }?.forEach { existingJar ->
+            if (!existingJar.delete()) {
+                throw GradleException("Failed to delete existing mod jar: ${existingJar.absolutePath}")
+            }
+        }
+
+        val installedJar = modsDir.resolve(builtJar.name)
+        if (builtJar != installedJar) {
+            builtJar.copyTo(installedJar, overwrite = true)
+        }
+        logger.lifecycle("buildMinecraft: installed ${installedJar.name} to ${modsDir.absolutePath}")
+        logger.lifecycle("buildMinecraft: done")
+    }
+}
