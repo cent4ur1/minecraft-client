@@ -1,0 +1,11 @@
+{
+    "name": "RottenApple",
+    "modId": "rottenapple",
+    "entryPoints": [
+        "com.rottenapple.client.RottenAppleMod"
+    ],
+    "mixinConfigs": [
+        "rottenapple.mixins.json"
+    ],
+    "namespace": "mcp-named"
+}

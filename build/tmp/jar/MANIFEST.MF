@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Premain-Class: com.rottenapple.agent.RottenAppleAgent
+Agent-Class: com.rottenapple.agent.RottenAppleAgent
+Can-Redefine-Classes: true
+Can-Retransform-Classes: true
+Implementation-Title: RottenApple
+Implementation-Version: 1.0.0
+
