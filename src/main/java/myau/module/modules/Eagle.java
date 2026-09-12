@@ -53,7 +53,7 @@ public class Eagle extends Module {
 
     @EventTarget(Priority.LOWEST)
     public void onTick(TickEvent event) {
-        if (this.isEnabled() && event.getType() == EventType.PRE) {
+        if (this.isEnabled() && event.getType() == EventType.PRE && mc.thePlayer != null && mc.theWorld != null) {
             if (this.sneakDelay > 0) {
                 this.sneakDelay--;
             }
