@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 public class Myau {
-    public static String clientName = "&7[&cM&6y&ea&au&7]&r ";
+    public static String clientName = "&7[&4R&cott&6e&en&2A&bp&3p&bl&de&7]&r ";
     public static String version;
     public static RotationManager rotationManager;
     public static FloatManager floatManager;
@@ -76,6 +76,7 @@ public class Myau {
         moduleManager.modules.put(Chams.class, new Chams());
         moduleManager.modules.put(ChestESP.class, new ChestESP());
         moduleManager.modules.put(ChestStealer.class, new ChestStealer());
+        moduleManager.modules.put(Displace.class, new Displace());
         moduleManager.modules.put(Eagle.class, new Eagle());
         moduleManager.modules.put(ESP.class, new ESP());
         moduleManager.modules.put(FastPlace.class, new FastPlace());
