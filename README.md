@@ -51,6 +51,20 @@ On macOS the build already strips `-XstartOnFirstThread` for the `client` run co
 - Settings: `mode`, `yaw-offset`, `scan-radius`, `delay`, `direction`, `find-void`, `blink`, `ignore-one-block-wall`, `ignore-teammates`, `only-knockback-items`, `override-attack`, `render-arrow`, `weapon-only`
 - Port notes: Raven's `LagRequest` blink is emulated with `Myau.lagManager.setDelay(...)`; `ClientRotationEvent` is emulated with `UpdateEvent` PRE; Raven DEBUG-only void visualisation was omitted; override-attack is a simplified flick/attack/restore state machine.
 
+## AutoBlockIn module (Raven port)
+
+- Location: `src/main/java/myau/module/modules/AutoBlockIn.java` — faithful port of Raven's `AutoBlockin`, same targeting/rotation/placement/progress behaviour.
+- **It does nothing until you set an activation key** (same as Raven: key `0` = unbound = idle). Toggle the module on, then set the hold-key via chat, e.g.:
+  - `.autoblockin activation-key 57` — hold SPACE (LWJGL keycode) to block in
+  - `.autoblockin activation-key 1001` — hold RIGHT MOUSE (1000 + button id) to block in
+- Settings: `speed`, `randomization`, `rotation-tolerance`, `show-progress` (`CIRCLE`/`PERCENTAGE`/`OFF`), `disable-in-creative`, `skip-near-bed`, `activation-key`, `ignore-blocks` + `ignored-blocks` (comma-separated block names), `disable-hotbar-scrolling`, `item-spoof`.
+- Port notes: `ClientRotationEvent` → `UpdateEvent` PRE; pre-motion place flush → `PlayerUpdateEvent`; click/scroll suppression → `LeftClickMouseEvent`/`RightClickMouseEvent`/`SwapItemEvent` cancels; `BedAura.shouldOverrideMouseOver()` → yield when `BedNuker` is enabled and ready; rotation smoothing, grid scan, and progress fade ported verbatim.
+
+## Eagle fix
+
+- `direction-check`, `pitch-check`, and `blocks-only` now default to off (Raven `BridgeAssist` parity: conditions are opt-in). Previously all three defaulted to on, so Eagle silently did nothing unless you bridged without `W`, staring 69°+ down, holding blocks.
+- Removed a broken `sneaking-only` branch that forced an *unsneak* (plus full-speed movement) exactly when the sneak key was held — i.e. it walked you off the edge.
+
 ## Contributing
 
 You can open an issue or submit a pull request to help improve RottenApple Client.

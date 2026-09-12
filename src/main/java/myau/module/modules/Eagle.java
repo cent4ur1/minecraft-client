@@ -22,10 +22,10 @@ public class Eagle extends Module {
     private int sneakDelay = 0;
     public final IntProperty minDelay = new IntProperty("min-delay", 2, 0, 10);
     public final IntProperty maxDelay = new IntProperty("max-delay", 3, 0, 10);
-    public final BooleanProperty directionCheck = new BooleanProperty("direction-check", true);
+    public final BooleanProperty directionCheck = new BooleanProperty("direction-check", false);
     public final BooleanProperty jumpCheck = new BooleanProperty("jump-check", true);
-    public final BooleanProperty pitchCheck = new BooleanProperty("pitch-check", true);
-    public final BooleanProperty blocksOnly = new BooleanProperty("blocks-only", true);
+    public final BooleanProperty pitchCheck = new BooleanProperty("pitch-check", false);
+    public final BooleanProperty blocksOnly = new BooleanProperty("blocks-only", false);
     public final BooleanProperty sneakOnly = new BooleanProperty("sneaking-only", false);
 
     private boolean canMoveSafely() {
@@ -66,13 +66,6 @@ public class Eagle extends Module {
     @EventTarget(Priority.LOWEST)
     public void onMoveInput(MoveInputEvent event) {
         if (this.isEnabled() && mc.currentScreen == null) {
-
-            if (sneakOnly.getValue() && Keyboard.isKeyDown(mc.gameSettings.keyBindSneak.getKeyCode()) && shouldSneak()) {
-                mc.thePlayer.movementInput.sneak = false;
-                mc.thePlayer.movementInput.moveForward /= 0.3F;
-                mc.thePlayer.movementInput.moveStrafe /= 0.3F;
-            }
-
             if (!mc.thePlayer.movementInput.sneak) {
                 if (this.shouldSneak() && (this.sneakDelay > 0 || this.canMoveSafely())) {
                     mc.thePlayer.movementInput.sneak = true;
