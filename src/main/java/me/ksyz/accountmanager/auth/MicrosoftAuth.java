@@ -2,7 +2,6 @@ package me.ksyz.accountmanager.auth;
 
 import com.google.gson.*;
 import com.sun.net.httpserver.HttpServer;
-import me.ksyz.accountmanager.utils.SSLUtils;
 import net.minecraft.util.Session;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -14,11 +13,9 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.conn.ssl.BrowserCompatHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
@@ -43,22 +40,11 @@ import java.util.stream.Collectors;
  */
 // Based on Auth Me (https://github.com/axieum/authme)
 public final class MicrosoftAuth {
+    // Uses the JVM's default trust store (system CAs) + default hostname
+    // verifier. Previous versions pinned a bundled ssl.jks here; that is
+    // intentionally removed (see SSLUtils).
     private static CloseableHttpClient createTrustedHttpClient() {
-        try {
-            SSLConnectionSocketFactory sf = new SSLConnectionSocketFactory(
-                    SSLUtils.getSSLContext().getSocketFactory(),
-                    new String[]{"TLSv1.2"},
-                    null,
-                    new BrowserCompatHostnameVerifier()
-            );
-            return HttpClientBuilder.create()
-                    .setSSLSocketFactory(sf)
-                    .build();
-        } catch (Exception ignored) {
-            //
-        }
-
-        return HttpClients.createDefault();
+        return HttpClients.createSystem();
     }
 
     // A reusable Apache HTTP request config
